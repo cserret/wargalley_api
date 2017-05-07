@@ -1,0 +1,23 @@
+{
+    "name": "api",
+    "version": "1.0.0",
+    "description": "",
+    "main": "api.js",
+    "dependencies": {
+        "bcrypt": "^1.0.2",
+        "fs": "0.0.1-security",
+        "jsonwebtoken": "^7.4.0",
+        "pg": "^6.1.5",
+        "request": "^2.81.0",
+        "restify": "^4.3.0",
+        "restify-https": "^0.0.3"
+    },
+    "devDependencies": {
+        "jasmine-node": "^1.14.5"
+    },
+    "scripts": {
+        "test": "jasmine-node spec"
+    },
+    "author": "",
+    "license": "ISC"
+}
