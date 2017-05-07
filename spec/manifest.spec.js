@@ -1,6 +1,5 @@
 var request = require("request");
 var base_url = "https://wargalley.com:8198/"
-
 describe("manifest", function () {
     describe("GET /", function () {
         it("returns status code 200", function (done) {
@@ -11,3 +10,4 @@ describe("manifest", function () {
         });
     });
 });
+
