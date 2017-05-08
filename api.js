@@ -26,23 +26,27 @@ var https_options = {
     certificate: fs.readFileSync('/etc/letsencrypt/live/wargalley.com/fullchain.pem')
 }
 restify.pre.sanitizePath()
+
+// doesn't work
+//restify.defaultResponseHeaders = function(data) {
+//	  this.header('Server', 'helloworld');
+//};
+
 var server = restify.createServer({
     certificate: https_options.certificate,
     key: https_options.key,
     name: 'app'
 })
+
 server.use(restify.fullResponse()) // this command for some reason, enables cors (allows connections from outside, cross-domain stuff)
 server.use(restify.bodyParser()); // req.params
 server.use(restify.queryParser()); // req.query
 server.use(function (req, res, next) {
     res.setHeader('content-type', 'application/json')
+    res.setHeader('Server', 'wargalley api')
     next()
 })
-server.use(function slowHandler(req, res, next) {
-    setTimeout(function () {
-        return next();
-    }, 250);
-});
+
 var setup_server = function (app) {
     function respond(req, res, next) {
         res.send('I see you ' + req.params.name);
@@ -57,7 +61,6 @@ var setup_server = function (app) {
                 res.send(400, { status: "fail", params: req.params, error: err });
             }
             else {
-                res.header("wcd-error", "err is true");
                 res.send(200, { status: "ok", info: "no parameter", params: req.params, result: result });
             }
             next();
@@ -83,11 +86,6 @@ var setup_server = function (app) {
 
     //  app.get('/manifest', function
 
-    app.post('/login', function create(req, res, next) {
-        res.send(201, { "code": Math.random().toString(36).substr(3, 8) })
-        return next();
-    })
-
     app.post('/user', function create(req, res, next) {
         var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
         ip = ip.split(":");
@@ -98,6 +96,28 @@ var setup_server = function (app) {
             }
             else {
                 res.send(201, { "id": result[0].id })
+            }
+            return next();
+        });
+    })
+
+    app.put('/user', function create(req, res, next) {
+        var ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+        ip = ip.split(":");
+        ip = ip[ip.length - 1];
+        console.log("calling user.authenticate");
+        user.authenticate({ timezone: req.params.timezone, ip: ip, email: req.params.email, password: req.params.password }, function (err, result) {
+            if (err !== null) {
+                res.send(401, { status: "fail", "error": err });
+            }
+            else {
+                console.log("api put user got result ", result)
+                if (result.status === "fail") {
+                    res.send(401, result)
+                }
+                else {
+                    res.send(200, result)
+                }
             }
             return next();
         });

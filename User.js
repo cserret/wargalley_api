@@ -1,4 +1,6 @@
 const bcrypt = require('bcrypt')
+var Jwt = require('./Jwt')
+var jwt = new Jwt()
 var db = require('./db')
 var isoDateNow = require('./isoDateNow')
 function User(opt) {
@@ -15,22 +17,59 @@ function User(opt) {
     }
 
     this.create = function (data, callback) {
-        console.log("user.create got data: ", data);
         var sql = "INSERT INTO public.user (data, password, email, last_login_date, created_on, updated_on) VALUES " +
             " ($1, $2, $3, $4, $4, $4) RETURNING id"
-        console.log("calling hash");
 
         bcrypt.hash(data.password, 10, function (err, encryptedPassword) {
-            console.log("encryptedPassword: ", encryptedPassword);
             var values = [{ timezone: data.timezone, ip_address: data.ip }, encryptedPassword, data.email, isoDateNow()]
-            console.log("values: ", values);
             db(sql, values, function (error, result) {
-                console.log("returning error ", error);
-                console.log("retturning result ", result);
                 return callback(error, result)
             });
         })
     };
+
+    this.authenticate = function (data, callback) {
+        console.log("User authenticate got data ", data);
+        let sql = "SELECT id, password FROM public.user WHERE email = $1";
+        let values = [data.email];
+        db(sql, values, function (error, result) {
+            if (error !== null) {
+                callback(error, null)
+            }
+            else {
+                console.log('got password result ', result)
+                let id = result[0].id
+                let encryptedPassword = result[0].password;
+                console.log('got saved password: ', encryptedPassword);
+                bcrypt.compare(data.password, encryptedPassword, function (err, result) {
+                    if (result === false) {
+                        callback(null, { status: "fail", message: "invalid login" })
+                    }
+                    else {
+                        console.log('success, updating last_login_date');
+                        sql = "UPDATE public.user SET last_login_date = $1 WHERE id = $2";
+                        console.log(sql + " with id " + id);
+                        console.log("and isoDateNow: ", isoDateNow())
+                        values = [isoDateNow(), id]
+                        db(sql, values, function (error, result) {
+                            if (error !== null) {
+                                console.log("error: ", error);
+                                callback(error, null)
+                            }
+                            else {
+                                console.log("ok generating token")
+                                let token = jwt.createToken(data.email, function (err, token) {
+                                    console.log("generated token for " + data.email + " : " + token);
+                                    callback(null, { status: "success", token: token })
+                                })
+                            }
+
+                        })
+                    }
+                })
+            }
+        })
+    }
 }
 
 
