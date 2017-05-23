@@ -1,5 +1,8 @@
 
 var db = require('./db');
+var Jwt = require('./Jwt')
+var jwt = new Jwt()
+
 function Manifest(opt) {
     this.manifest = {};
     if (opt) {
@@ -7,11 +10,14 @@ function Manifest(opt) {
     }
 
     this.get = function (data, callback) {
-
-        var sql = "SELECT * FROM manifest";
-        db(sql, null, function (error, result) {
-            return callback(error, result);
-        });
+        let access_token = data.access_token;
+        let decoded = jwt.verifyToken(access_token, (error, result) => {
+            let email = result.email;
+            var sql = "SELECT * FROM manifest WHERE email = $1";
+            db(sql, [email], function (error, result) {
+                return callback(error, result);
+            });
+        })
     }
 
     this.save = function (data, callback) {

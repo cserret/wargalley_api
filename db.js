@@ -27,7 +27,6 @@ var pool = new Pool(config)
 
 module.exports =
     async function db(sql, values = null, cb) {
-        console.log("db, values: ", values);
         try {
             var client = await pool.connect()
             try {
